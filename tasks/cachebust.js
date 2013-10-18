@@ -16,7 +16,17 @@ module.exports = function(grunt) {
         images: {
             src: /<img[^\>]+src=['"](?!http:|https:|\/\/|data:image)([a-zA-Z0-9\/]*)(\.[a-zA-Z]{2,})([^"']+)(["'])/gm,
             file: /src=['"]([^"']+)["']/m
-        }
+        },
+		templateurl: {
+			src: /templateUrl.*:.?['"](|\/\/)([^"']+)["']/gmi,
+            file: /templateUrl.*:.*['"]([^"']+)["']/m 
+			
+		},
+		version: {
+			src: /version:['"](|\/\/)([^"']+)["']/gmi,
+            file: /version:.*['"]([^"']+)["']/m 
+		}
+		
     };
 
     var fileOptions = {
@@ -38,6 +48,7 @@ module.exports = function(grunt) {
         var opts = grunt.util._.defaults(this.options(), options);
 
         this.files.forEach(function(f) {
+			
             var src = f.src.filter(function(filepath) {
                 // Warn on and remove invalid source files (if nonull was set).
                 if (!grunt.file.exists(filepath)) {
@@ -48,16 +59,37 @@ module.exports = function(grunt) {
                 }
             }).map(function(filepath) {
                 var data = grunt.file.read(filepath, fileOptions);
-
+						
                 grunt.util._.each(regexs, function(regex, type) {
                     var matches = data.match(regex.src) || [];
+					
                     matches.forEach(function(snippet) {
+					
+	                    var name = snippet.match(regex.file)[1];
+						
+						//If the src begins with /EHR or /AM, back up a level
+						if (name.substring(0,4) === '/EHR' || name.toUpperCase().substring(0,3) === '/AM'){
+							name = '..' + name;	
+						}
+						//if the src has a  querystring remove it
+						if (name.indexOf('?') > 0){
+							name = name.substring(0,name.indexOf('?'));
+						}
+						//if file exists then use that to derive hash
+						if (!grunt.file.exists(name)) {
+							if (filepath !== 'version.txt'){
+								grunt.log.warn('Source file "' + name + '" not found.');	
+							}
+		                    var hashData = data;
+		                } else {
+		                    var hashData = grunt.file.read(name, fileOptions);
+		                }
 
                         // Generate hash
-                        var hash = opts.hash || crypto.createHash(opts.algorithm).update(data, opts.encoding).digest('hex').substring(0, opts.length);
-
+                        var hash = opts.hash || crypto.createHash(opts.algorithm).update(hashData, opts.encoding).digest('hex').substring(0, opts.length);
+						//var hash = 'version=' + hash;
                         var extension = type !== 'images' ? '.'+ type : snippet.match(/\.\w+/)[0];
-
+						
                         if(opts.rename) {
                             var path     = opts.baseDir + '/';
                             var _snippet = snippet;
@@ -89,8 +121,11 @@ module.exports = function(grunt) {
                                 grunt.file.delete(filename);
                             }
                         } else {
+							
                             snippet = snippet.substring(0, snippet.length - 1);
+							
                             data    = data.replace(snippet, snippet.split('?')[0] + '?' + hash);
+							
                         }
                     });
                 });
