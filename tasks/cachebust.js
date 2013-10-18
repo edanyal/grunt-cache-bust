@@ -65,7 +65,8 @@ module.exports = function(grunt) {
 					
                     matches.forEach(function(snippet) {
 					
-	                    var name = snippet.match(regex.file)[1];
+                        var name = snippet.match(regex.file)[1];
+                        var hashData = "";
 						
 						//If the src begins with /EHR or /AM, back up a level
 						if (name.substring(0,4) === '/EHR' || name.toUpperCase().substring(0,3) === '/AM'){
@@ -80,10 +81,10 @@ module.exports = function(grunt) {
 							if (filepath !== 'version.txt'){
 								grunt.log.warn('Source file "' + name + '" not found.');	
 							}
-		                    var hashData = data;
-		                } else {
-		                    var hashData = grunt.file.read(name, fileOptions);
-		                }
+                            hashData = data;
+                        } else {
+                            hashData = grunt.file.read(name, fileOptions);
+                        }
 
                         // Generate hash
                         var hash = opts.hash || crypto.createHash(opts.algorithm).update(hashData, opts.encoding).digest('hex').substring(0, opts.length);
@@ -107,7 +108,7 @@ module.exports = function(grunt) {
                             snippet = snippet.replace(new RegExp('_'+ opts.hash+'|[a-zA-Z0-9]{'+ opts.length +'}', 'ig'), '');
                             _snippet = _snippet.replace(new RegExp('_'+ opts.hash+'|[a-zA-Z0-9]{'+ opts.length +'}', 'ig'), '');
 
-                            var name = snippet.match(regex.file)[1];
+                            name = snippet.match(regex.file)[1];
                             var filename    = path + name;
                             var newFilename = path + name.replace(extension, '') +'_'+ hash + extension;
 
